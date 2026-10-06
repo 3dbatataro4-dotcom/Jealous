@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>親密關係領地意識：吃醋指數檢測</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f5;
+            --card-bg: #ffffff;
+            --primary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --text-main: #333333;
+            --text-muted: #7f8c8d;
+            --border-color: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'LiHei Pro', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .quiz-container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+            padding: 30px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-main);
+        }
+
+        .option-btn:hover {
+            background-color: #edf2f7;
+            border-color: #cbd5e1;
+        }
+
+        .option-btn.selected {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-prev {
+            background-color: #e2e8f0;
+            color: #475569;
+        }
+
+        .btn-prev:hover:not(:disabled) { background-color: #cbd5e1; }
+        .btn-prev:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-next {
+            background-color: var(--primary-color);
+            color: white;
+            margin-left: auto;
+        }
+
+        .btn-next:hover:not(:disabled) { background-color: #1a252f; }
+        .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .result-container {
+            text-align: center;
+            display: none;
+        }
+
+        .result-score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin: 20px 0;
+        }
+
+        .result-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .result-desc {
+            line-height: 1.6;
+            color: var(--text-muted);
+            text-align: justify;
+        }
+
+        .restart-btn {
+            margin-top: 30px;
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 480px) {
+            .quiz-container { padding: 20px; }
+            .question-text { font-size: 1.05rem; }
+            .option-btn { font-size: 0.95rem; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container" id="quiz-app">
+        
+        <!-- 測驗區域 -->
+        <div id="quiz-section">
+            <div class="header">
+                <h1>親密關係領地意識檢測</h1>
+                <div class="progress-text">問題 <span id="current-q-num">1</span> / 15</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="question-text" id="question-text">
+                載入題目中...
+            </div>
+
+            <div class="options-list" id="options-list">
+                <!-- 選項由 JS 動態生成 -->
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn btn-prev" id="btn-prev" disabled>上一題</button>
+                <button class="btn btn-next" id="btn-next" disabled>下一題</button>
+            </div>
+        </div>
+
+        <!-- 結果區域 -->
+        <div class="result-container" id="result-section">
+            <h2>你的檢測結果</h2>
+            <div class="result-score" id="final-score">0</div>
+            <div class="result-title" id="result-title">標題</div>
+            <div class="result-desc" id="result-desc">描述</div>
+            <button class="btn restart-btn" onclick="location.reload()">重新測驗</button>
+        </div>
+
+    </div>
+
+    <script>
+        // 嚴謹的 15 題情境題庫 (分數 1~4)
+        const questions = [
+            {
+                q: "1. 伴侶在深夜十一點收到異性友人的訊息，內容與緊急公事無關，僅是閒聊。你的反應是？",
+                options: [
+                    { text: "不以為意，朋友間偶爾閒聊很正常。", score: 1 },
+                    { text: "隨口詢問內容，若伴侶態度坦蕩便不再追究。", score: 2 },
+                    { text: "內心感到不悅，並要求伴侶說明為何對方深夜傳訊。", score: 3 },
+                    { text: "強烈要求伴侶立刻結束對話，並警告對方注意分寸。", score: 4 }
+                ]
+            },
+            {
+                q: "2. 你發現伴侶頻繁地在某個極具魅力的前任或異性朋友的社群貼文下按讚留言。你會：",
+                options: [
+                    { text: "覺得無所謂，社群互動不代表什麼。", score: 1 },
+                    { text: "偶爾開玩笑地提一下，表達自己有注意到。", score: 2 },
+                    { text: "認真表達不滿，要求伴侶減少互動頻率。", score: 3 },
+                    { text: "感到強烈威脅，要求伴侶退追蹤或刪除好友。", score: 4 }
+                ]
+            },
+            {
+                q: "3. 伴侶參加完聚會回來，不斷用崇拜的語氣誇讚局上的某個新朋友「非常聰明幽默」。你的感受是？",
+                options: [
+                    { text: "跟著附和，覺得伴侶能認識優秀的朋友很好。", score: 1 },
+                    { text: "稍微有點吃味，但還是願意聽伴侶分享。", score: 2 },
+                    { text: "開始貶低那個新朋友，或者故意轉移話題。", score: 3 },
+                    { text: "非常生氣，嚴厲質疑伴侶是不是對那個人有意思。", score: 4 }
+                ]
+            },
+            {
+                q: "4. 伴侶最近更改了手機密碼，且跟你相處時常常將手機螢幕朝下放。你會：",
+                options: [
+                    { text: "尊重隱私，每個人都需要私人空間。", score: 1 },
+                    { text: "覺得有點奇怪，會找機會溫和地詢問原因。", score: 2 },
+                    { text: "暗自起疑，開始密切觀察伴侶的其他行蹤。", score: 3 },
+                    { text: "無法忍受，直接要求伴侶交出手機讓你檢查。", score: 4 }
+                ]
+            },
+            {
+                q: "5. 你在伴侶的包包或車上發現了一個來歷不明、且風格不屬於伴侶的小禮物/配件。",
+                options: [
+                    { text: "可能只是別人寄放或贈送的實用品，不特別在意。", score: 1 },
+                    { text: "直接拿著物品詢問伴侶這是哪來的。", score: 2 },
+                    { text: "先不問，偷偷調查可能的來源，內心非常焦慮。", score: 3 },
+                    { text: "認定伴侶出軌或有曖昧對象，直接發脾氣對質。", score: 4 }
+                ]
+            },
+            {
+                q: "6. 伴侶表示週末要和一位「認識多年的青梅竹馬/紅粉知己」單獨去吃晚餐。你會：",
+                options: [
+                    { text: "祝他們玩得開心，完全不介意。", score: 1 },
+                    { text: "同意，但希望伴侶回家後能主動報備一聲。", score: 2 },
+                    { text: "勉強同意，但在伴侶出門期間會頻繁傳訊息查勤。", score: 3 },
+                    { text: "堅決反對，或要求自己也必須一起出席。", score: 4 }
+                ]
+            },
+            {
+                q: "7. 伴侶今天只是去赴一個普通的聚會（你不在場），卻花了一個小時精心打扮。你的直覺反應是？",
+                options: [
+                    { text: "稱讚伴侶很好看，為對方感到驕傲。", score: 1 },
+                    { text: "半開玩笑地問：「打扮這麼好看是要去見誰呀？」", score: 2 },
+                    { text: "感到不安，開始追問聚會的詳細名單與地點。", score: 3 },
+                    { text: "強烈不滿，要求伴侶換回平常的衣服再出門。", score: 4 }
+                ]
+            },
+            {
+                q: "8. 在你們的浪漫約會中，伴侶一直盯著手機並露出微笑，卻不主動告訴你在看什麼。",
+                options: [
+                    { text: "繼續吃自己的飯，等對方看完自然會說。", score: 1 },
+                    { text: "好奇地探頭過去看一眼或問一句「在笑什麼？」。", score: 2 },
+                    { text: "覺得自己被冷落，開始擺臭臉或故意冷戰。", score: 3 },
+                    { text: "一把搶過手機或大聲斥責伴侶不尊重這場約會。", score: 4 }
+                ]
+            },
+            {
+                q: "9. 在社交場合中，一個外表出眾的陌生人當著你的面，明顯地對你的伴侶釋放好感（調情）。",
+                options: [
+                    { text: "覺得有趣，這證明自己眼光很好，伴侶很有魅力。", score: 1 },
+                    { text: "自然地走過去牽住伴侶的手，無聲宣示主權。", score: 2 },
+                    { text: "事後對伴侶發脾氣，怪罪伴侶「到處招蜂引蝶」。", score: 3 },
+                    { text: "當場對那個陌生人發飆，並強行拉著伴侶離開。", score: 4 }
+                ]
+            },
+            {
+                q: "10. 你對伴侶的某位朋友提出輕微的批評，伴侶卻非常激動地為該朋友辯護。你會：",
+                options: [
+                    { text: "理性討論，接受伴侶有不同的觀點。", score: 1 },
+                    { text: "有點不是滋味，覺得伴侶怎麼幫外人不幫自己。", score: 2 },
+                    { text: "非常生氣，認為在伴侶心中朋友比自己重要。", score: 3 },
+                    { text: "將該朋友視為威脅，從此禁止伴侶與其來往。", score: 4 }
+                ]
+            },
+            {
+                q: "11. 伴侶無意間向你坦承，昨晚做夢夢到了前任。你的反應是？",
+                options: [
+                    { text: "夢境無法控制，聽聽就算了。", score: 1 },
+                    { text: "心裡有點酸酸的，希望伴侶能抱抱自己給予安全感。", score: 2 },
+                    { text: "追問夢境的細節，並懷疑伴侶對前任舊情未了。", score: 3 },
+                    { text: "大發雷霆，認為伴侶潛意識背叛了自己。", score: 4 }
+                ]
+            },
+            {
+                q: "12. 你意外發現，伴侶最近遇到了一個嚴重的低潮，卻選擇向朋友傾訴而不是告訴你。",
+                options: [
+                    { text: "理解伴侶可能是不想讓自己擔心，給予空間。", score: 1 },
+                    { text: "感到失落，溫和地向伴侶表達希望能成為對方的依靠。", score: 2 },
+                    { text: "覺得被背叛，質問伴侶：「我難道不是你最親近的人嗎？」", score: 3 },
+                    { text: "去找那位朋友理論，警告對方不要插手你們的感情。", score: 4 }
+                ]
+            },
+            {
+                q: "13. 在街上偶遇伴侶的舊識，對方熱情地叫出了一個你從未聽過的、屬於伴侶的專屬小名。",
+                options: [
+                    { text: "覺得新鮮，事後當作趣聞跟伴侶討論。", score: 1 },
+                    { text: "心裡有點在意，事後詢問伴侶這個小名的由來。", score: 2 },
+                    { text: "覺得自己的「專屬地位」被挑戰，要求伴侶以後不准別人這樣叫。", score: 3 },
+                    { text: "當場發作，用極度難堪的態度給對方難看。", score: 4 }
+                ]
+            },
+            {
+                q: "14. 伴侶培養了一個新興趣，週末常跟固定的小圈圈聚會，且因為領域太專業而無法帶你參加。",
+                options: [
+                    { text: "非常支持，正好自己週末也有事情可以做。", score: 1 },
+                    { text: "偶爾會覺得孤單，希望伴侶能撥出一些時間陪自己。", score: 2 },
+                    { text: "對伴侶的新圈子充滿敵意，時常酸言酸語。", score: 3 },
+                    { text: "強烈情緒勒索，逼迫伴侶在「興趣」與「自己」之間做選擇。", score: 4 }
+                ]
+            },
+            {
+                q: "15. 尾牙或公司聚餐時，你看到伴侶與同事有看似打鬧的肢體接觸（如拍肩膀、推擠）。",
+                options: [
+                    { text: "職場上的正常互動，大家開心就好。", score: 1 },
+                    { text: "不太喜歡這種界線模糊的互動，事後會提醒伴侶注意。", score: 2 },
+                    { text: "立刻介入，用眼神或動作警告那些同事保持距離。", score: 3 },
+                    { text: "認定伴侶不懂避嫌，當場大鬧並要求伴侶立刻回家。", score: 4 }
+                ]
+            }
+        ];
+
+        let currentQuestion = 0;
+        let answers = new Array(questions.length).fill(null);
+
+        // DOM 元素
+        const quizSection = document.getElementById('quiz-section');
+        const resultSection = document.getElementById('result-section');
+        const questionText = document.getElementById('question-text');
+        const optionsList = document.getElementById('options-list');
+        const currentQNum = document.getElementById('current-q-num');
+        const progressFill = document.getElementById('progress-fill');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+
+        function loadQuestion(index) {
+            const q = questions[index];
+            questionText.textContent = q.q;
+            currentQNum.textContent = index + 1;
+            progressFill.style.width = `${((index + 1) / questions.length) * 100}%`;
+            
+            // 生成選項
+            optionsList.innerHTML = '';
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn ${answers[index] === opt.score ? 'selected' : ''}`;
+                btn.textContent = opt.text;
+                btn.onclick = () => selectOption(opt.score, btn);
+                optionsList.appendChild(btn);
+            });
+
+            // 更新按鈕狀態
+            btnPrev.disabled = index === 0;
+            updateNextButton();
+        }
+
+        function selectOption(score, btn) {
+            answers[currentQuestion] = score;
+            
+            // 更新 UI 選取狀態
+            const allBtns = optionsList.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            
+            updateNextButton();
+            
+            // 自動跳下一題 (可選，提升流暢度)
+            setTimeout(() => {
+                if (currentQuestion < questions.length - 1) {
+                    currentQuestion++;
+                    loadQuestion(currentQuestion);
+                } else {
+                    showResult();
+                }
+            }, 300);
+        }
+
+        function updateNextButton() {
+            if (answers[currentQuestion] === null) {
+                btnNext.disabled = true;
+                btnNext.textContent = currentQuestion === questions.length - 1 ? '觀看結果' : '下一題';
+            } else {
+                btnNext.disabled = false;
+                btnNext.textContent = currentQuestion === questions.length - 1 ? '觀看結果' : '下一題';
+            }
+        }
+
+        btnPrev.addEventListener('click', () => {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                loadQuestion(currentQuestion);
+            }
+        });
+
+        btnNext.addEventListener('click', () => {
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                loadQuestion(currentQuestion);
+            } else {
+                showResult();
+            }
+        });
+
+        function showResult() {
+            // 計算總分
+            const totalScore = answers.reduce((sum, val) => sum + val, 0);
+            
+            quizSection.style.display = 'none';
+            resultSection.style.display = 'block';
+            
+            document.getElementById('final-score').textContent = totalScore + ' 分';
+            
+            // 判定結果區間 (最低15分，最高60分)
+            const titleEl = document.getElementById('result-title');
+            const descEl = document.getElementById('result-desc');
+            
+            if (totalScore <= 25) {
+                titleEl.textContent = "絕對信任的「佛系戀人」 (15-25分)";
+                titleEl.style.color = "#27ae60";
+                descEl.textContent = "你的吃醋指數極低。在感情中你給予對方極大的空間與信任，比起約束，你更相信兩人的羈絆不需要靠控制來維持。不過有時也要注意，過度的不過問可能會讓伴侶誤以為你「不在乎」喔！";
+            } else if (totalScore <= 38) {
+                titleEl.textContent = "邊界分明的「理智伴侶」 (26-38分)";
+                titleEl.style.color = "#2980b9";
+                descEl.textContent = "你的領地意識處於非常健康的狀態。遇到威脅時你會產生醋意，但你能透過理性的溝通與伴侶表達你的不安，而不是訴諸情緒勒索或過度干涉。你懂得在「保護關係」與「尊重個人空間」中取得平衡。";
+            } else if (totalScore <= 50) {
+                titleEl.textContent = "敏感多疑的「醋罈微酸」 (39-50分)";
+                titleEl.style.color = "#e67e22";
+                descEl.textContent = "你的領地意識較強，對於伴侶身邊的潛在威脅雷達非常敏銳。吃醋是你表達在意的方式，但有時會因為缺乏安全感而過度解讀細節。建議在感到焦慮時，先深呼吸，試著信任伴侶，別讓醋意變成無形的壓力。";
+            } else {
+                titleEl.textContent = "絕對佔有的「霸道領主」 (51-60分)";
+                titleEl.style.color = "#c0392b";
+                descEl.textContent = "你的吃醋指數爆表！在關係中你擁有極強的佔有慾與排他性，不容許伴侶的注意力有一絲一毫的分散。這種濃烈的愛意雖然強大，但也極具壓迫感。試著放鬆掌控，愛情是雙向的選擇，而非單向的囚禁。";
+            }
+        }
+
+        // 初始化
+        loadQuestion(0);
+    </script>
+</body>
+</html>
